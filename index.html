@@ -3,197 +3,285 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Trader - Daily PnL Tracker</title>
+  <title>Tradoor - Your Trading Journey Companion</title>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script> <!-- Stripe for Pro upgrades -->
   <style>
     body { 
       font-family: Arial, Helvetica, sans-serif; 
-      margin: 20px; 
-      background: #f4f4f4; 
-      color: #333;
+      margin: 0;
+      padding: 0 0 80px 0; /* Space for bottom menu */
+      background: #1a0033; /* Dark purple background */
+      color: #e6e6ff;
+      min-height: 100vh;
     }
-    h1 { text-align: center; color: #2c3e50; }
+    h1 { text-align: center; color: #bb86fc; padding: 20px 0; margin: 0; }
+    a { color: #bb86fc; text-decoration: none; }
+    /* Top bar with profile */
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px 20px;
+      background: #2d1b4d;
+    }
+    .profile-link {
+      background: #bb86fc;
+      color: #1a0033;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+    /* Pages */
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
+    /* Profile Page */
     .profile-bar {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
+      background: #2d1b4d;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      max-width: 600px;
+      margin: 20px auto;
       text-align: center;
     }
     .profile-bar input, .profile-bar button {
-      margin: 5px;
-      padding: 8px;
+      margin: 10px;
+      padding: 12px;
+      width: 80%;
+      border-radius: 8px;
+      border: none;
     }
+    .profile-bar button { background: #bb86fc; color: #1a0033; font-weight: bold; cursor: pointer; }
+    #profileDisplay { margin-top: 20px; font-size: 1.2em; }
+    /* Table and stats */
     table { 
       width: 100%; 
       border-collapse: collapse; 
       margin: 20px 0; 
-      background: white; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+      background: #2d1b4d; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
     }
     th, td { 
       padding: 12px; 
       text-align: center; 
-      border: 1px solid #ddd; 
+      border: 1px solid #4a2a7d; 
     }
     th { 
-      background: #3498db; 
-      color: white; 
+      background: #bb86fc; 
+      color: #1a0033; 
     }
     input, select { 
       width: 90%; 
       padding: 8px; 
-      border: 1px solid #ccc; 
+      background: #4a2a7d;
+      color: #e6e6ff;
+      border: 1px solid #bb86fc; 
       border-radius: 4px; 
       box-sizing: border-box;
     }
     button { 
       padding: 8px 16px; 
-      background: #2ecc71; 
-      color: white; 
+      background: #bb86fc; 
+      color: #1a0033; 
       border: none; 
       border-radius: 4px; 
       cursor: pointer; 
-      margin: 5px owner's;
+      margin: 5px;
+      font-weight: bold;
     }
-    button:hover { background: #27ae60; }
-    .delete-btn { background: #e74c3c; }
-    .delete-btn:hover { background: #c0392b; }
-    .edit-btn { background: #f39c12; }
-    .edit-btn:hover { background: #e67e22; }
-    .export-btn { background: #9b59b6; }
-    .export-btn:hover { background: #8e44ad; }
-    .calc-btn { background: #34495e; }
-    .calc-btn:hover { background: #2c3e50; }
-    .save-edit-btn { background: #27ae60; }
-    .cancel-edit-btn { background: #95a5a6; }
+    button:hover { background: #cf9fff; }
+    .delete-btn { background: #e74c3c; color: white; }
+    .edit-btn { background: #f39c12; color: white; }
+    .export-btn { background: #9b59b6; color: white; }
+    .calc-btn { background: #34495e; color: white; }
+    .save-edit-btn { background: #27ae60; color: white; }
+    .cancel-edit-btn { background: #95a5a6; color: white; }
+    .upgrade-btn { background: #ffd700; color: #1a0033; font-weight: bold; }
+    .pro-feature { display: none; }
+    .pro-feature.active { display: block; }
     .stats, .overall-stats { 
-      background: white; 
+      background: #2d1b4d; 
       padding: 20px; 
-      border-radius: 8px; 
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+      border-radius: 12px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
       margin: 20px 0; 
     }
-    .stats h2, .overall-stats h2 { margin-top: 0; color: #2c3e50; }
+    .stats h2, .overall-stats h2 { margin-top: 0; color: #bb86fc; }
     .filter-bar { text-align: center; margin: 20px 0; }
-    .highlight-win { background: #d5f4e0 !important; }
-    .highlight-loss { background: #fce8e6 !important; }
-    tr.editing { background: #fffacd !important; }
+    .highlight-win { background: #0d402d !important; }
+    .highlight-loss { background: #590000 !important; }
+    tr.editing { background: #4a0072 !important; }
+    /* Bottom Menu */
+    .bottom-menu {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #2d1b4d;
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+    .menu-btn {
+      background: none;
+      border: none;
+      color: #bb86fc;
+      font-size: 1.5em;
+      cursor: pointer;
+      padding: 10px;
+    }
+    .menu-btn.active {
+      color: #ffffff;
+      border-top: 3px solid #bb86fc;
+      padding-top: 7px;
+    }
     @media (max-width: 768px) {
-      table, thead, tbody, th, td, tr { display: block; }
-      thead tr { position: absolute; top: -9999px; left: -9999px; }
-      tr { margin-bottom: 15px; border: 1px solid #ccc; }
-      td { border: none; position: relative; padding-left: 50%; }
-      td:before { position: absolute; left: 6px; width: Opin 45%; padding-right: 10px; white-space: nowrap; font-weight: bold; }
-      td:nth-of-type(1):before { content: "Date"; }
-      td:nth-of-type(2):before { content: "Pair"; }
-      td:nth-of-type(3):before { content: "Direction"; }
-      td:nth-of-type(4):before { content: "Entry"; }
-      td:nth-of-type(5):before { content: "Exit"; }
-      td:nth-of-type(6):before { content: "Size ($)"; }
-      td:nth-of-type(7):before { content: "Leverage"; }
-      td:nth-of-type(8):before { content: "Volume ($)"; }
-      td:nth-of-type(9):before { content: "Fees"; }
-      td:nth-of-type(10):before { content: "PnL ($)"; }
-      td:nth-of-type(11):before { content: "Action"; }
+      .menu-btn { font-size: 1.8em; }
     }
   </style>
 </head>
 <body>
-  <h1>Trader - Daily PnL Tracker</h1>
-
-  <!-- Profile Section -->
-  <div class="profile-bar">
-    <h3>Set Your Trader Profile</h3>
-    <input type="text" id="traderName" placeholder="Your Trading Name">
-    <input type="number" id="startingBalance" placeholder="Starting Balance ($)" step="0.01">
-    <input type="number" id="riskPercent" placeholder="Risk % per Trade" step="0.1" min="0" max="100">
-    <button onclick="saveProfile()">Save Profile</button>
-    <div id="profileDisplay" style="margin-top:10px; font-weight:bold;"></div>
+  <div class="top-bar">
+    <div class="profile-link" onclick="showPage('profile')">Profile</div>
   </div>
 
-  <div class="filter-bar">
-    <label>Filter by Date: </label>
-    <input type="date" id="dateFilter">
-    <button onclick="filterByDate()">Show Day</button>
-    <button onclick="showAll()">Show All</button>
-    <button class="export-btn" onclick="exportCSV(false)">Export All to CSV</button>
-    <button class="export-btn" onclick="exportCSV(true)">Export Current View</button>
-    <button class="calc-btn" onclick="calculateOverall()">Calculate Overall Stats</button>
+  <h1>Tradoor - Elevate Your Trading Journey</h1>
+
+  <!-- Profile Page -->
+  <div id="profile" class="page">
+    <div class="profile-bar">
+      <h3>Set Your Tradoor Profile</h3>
+      <input type="text" id="traderName" placeholder="Your Trading Name">
+      <input type="number" id="startingBalance" placeholder="Starting Balance ($)" step="0.01">
+      <input type="number" id="riskPercent" placeholder="Risk % per Trade" step="0.1" min="0" max="100">
+      <button onclick="saveProfile()">Save Profile</button>
+      <div id="profileDisplay"></div>
+    </div>
   </div>
 
-  <table id="tradesTable">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Pair</th>
-        <th>Direction</th>
-        <th>Entry Price</th>
-        <th>Exit Price</th>
-        <th>Size ($)</th>
-        <th>Leverage</th>
-        <th>Trade Volume ($)</th>
-        <th>Fees</th>
-        <th>PnL ($)</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody id="tradesBody"></tbody>
-    <tfoot>
-      <tr>
-        <td><input type="date" id="newDate"></td>
-        <td><input type="text" id="newPair" placeholder="e.g. BTCUSDT"></td>
-        <td>
-          <select id="newDirection">
-            <option>Long</option>
-            <option>Short</option>
-          </select>
-        </td>
-        <td><input type="number" step="0.01" id="newEntry" placeholder="0.00"></td>
-        <td><input type="number" step="0.01" id="newExit" placeholder="0.00"></td>
-        <td><input type="number" step="0.01" id="newSize" placeholder="100.00"></td>
-        <td><input type="number" id="newLeverage" value="10"></td>
-        <td></td> <!-- Volume calculated automatically -->
-        <td><input type="number" step="0.01" id="newFees" value="0"></td>
-        <td></td> <!-- PnL calculated -->
-        <td><button onclick="addTrade()">Add Trade</button></td>
-      </tr>
-    </tfoot>
-  </table>
+  <!-- Main Trades Page -->
+  <div id="trades" class="page active">
+    <div class="filter-bar">
+      <label>Filter by Date: </label>
+      <input type="date" id="dateFilter">
+      <button onclick="filterByDate()">Show Day</button>
+      <button onclick="showAll()">Show All</button>
+      <button class="export-btn" onclick="exportCSV(false)">Export All</button>
+      <button class="export-btn" onclick="exportCSV(true)">Export View</button>
+      <button class="calc-btn" onclick="calculateOverall()">Overall Stats</button>
+    </div>
 
-  <!-- Current View Stats -->
-  <div class="stats" id="stats">
-    <h2>Current View Statistics</h2>
-    <p><strong>Period:</strong> <span id="statDate">All Time</span></p>
-    <p><strong>Total Trades:</strong> <span id="totalTrades">0</span></p>
-    <p><strong>Winning Trades:</strong> <span id="wins">0</span> | <strong>Losing Trades:</strong> <span id="losses">0</span></p>
-    <p><strong>Average Win:</strong> $<span id="avgWin">0.00</span> | <strong>Average Loss:</strong> $<span id="avgLoss">0.00</span></p>
-    <p><strong>Win Rate:</strong> <span id="winRate">0%</span></p>
-    <p><strong>Total PnL:</strong> $<span id="totalPnl">0.00</span></p>
-    <p><strong>Profit Factor:</strong> <span id="profitFactor">0.00</span></p>
+    <table id="tradesTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Pair</th>
+          <th>Dir</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Size ($)</th>
+          <th>Leverage</th>
+          <th>Volume ($)</th>
+          <th>Fees</th>
+          <th>PnL ($)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tradesBody"></tbody>
+      <tfoot>
+        <tr>
+          <td><input type="date" id="newDate"></td>
+          <td><input type="text" id="newPair" placeholder="BTCUSDT"></td>
+          <td>
+            <select id="newDirection">
+              <option>Long</option>
+              <option>Short</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" id="newEntry"></td>
+          <td><input type="number" step="0.01" id="newExit"></td>
+          <td><input type="number" step="0.01" id="newSize" placeholder="100"></td>
+          <td><input type="number" id="newLeverage" value="10"></td>
+          <td></td>
+          <td><input type="number" step="0.01" id="newFees" value="0"></td>
+          <td></td>
+          <td><button onclick="addTrade()">Add</button></td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <div class="stats" id="stats">
+      <h2>Current View Stats</h2>
+      <p><strong>Period:</strong> <span id="statDate">All Time</span></p>
+      <p><strong>Trades:</strong> <span id="totalTrades">0</span></p>
+      <p><strong>Wins:</strong> <span id="wins">0</span> | <strong>Losses:</strong> <span id="losses">0</span></p>
+      <p><strong>Avg Win:</strong> $<span id="avgWin">0.00</span> | <strong>Avg Loss:</strong> $<span id="avgLoss">0.00</span></p>
+      <p><strong>Win Rate:</strong> <span id="winRate">0%</span></p>
+      <p><strong>Total PnL:</strong> $<span id="totalPnl">0.00</span></p>
+      <p><strong>Profit Factor:</strong> <span id="profitFactor">0.00</span></p>
+    </div>
+
+    <div class="overall-stats" id="overallStats" style="display:none;">
+      <h2>Overall Performance</h2>
+      <p><strong>Trader:</strong> <span id="overallName">Not Set</span></p>
+      <p><strong>Starting:</strong> $<span id="overallStart">0.00</span></p>
+      <p><strong>Net Profit:</strong> $<span id="overallNet">0.00</span></p>
+      <p><strong>Return:</strong> <span id="overallReturn">0.00</span>%</p>
+      <p><strong>Balance:</strong> $<span id="overallBalance">0.00</span></p>
+      <p><strong>Trades:</strong> <span id="overallTotal">0</span></p>
+      <p><strong>Win Rate:</strong> <span id="overallWinRate">0%</span></p>
+      <p><strong>Avg Win:</strong> $<span id="overallAvgWin">0.00</span> | <strong>Avg Loss:</strong> $<span id="overallAvgLoss">0.00</span></p>
+      <p><strong>Profit Factor:</strong> <span id="overallPF">0.00</span></p>
+      <p><strong>Fees Paid:</strong> $<span id="overallFees">0.00</span></p>
+      <!-- Pro Features -->
+      <div id="proAnalytics" class="pro-feature">
+        <h3>Pro Analytics (Powered by Grok)</h3>
+        <p><strong>Risk-Reward Ratio:</strong> <span id="riskReward">0.00</span></p>
+        <p><strong>Max Drawdown:</strong> <span id="maxDrawdown">0.00</span>%</p>
+        <p><strong>Total Volume Traded:</strong> $<span id="totalVolume">0.00</span></p>
+        <p><strong>Average Leverage:</strong> <span id="avgLeverage">0x</span></p>
+        <p><strong>Sharpe Ratio (Approx):</strong> <span id="sharpeRatio">0.00</span></p>
+        <p><strong>Best Pair:</strong> <span id="bestPair">N/A</span></p>
+        <p><strong>Worst Pair:</strong> <span id="worstPair">N/A</span></p>
+        <p><strong>Long vs Short Win Rate:</strong> Long <span id="longWinRate">0%</span> | Short <span id="shortWinRate">0%</span></p>
+        <button onclick="getGrokAnalysis()">Get Grok's Personalized Advice</button>
+        <p>Copy this prompt and ask Grok for in-depth analysis:</p>
+        <textarea id="grokPrompt" rows="10" style="width:100%; background:#4a2a7d; color:#e6e6ff; border:1px solid #bb86fc;"></textarea>
+      </div>
+      <div id="proUpgrade" style="text-align:center; margin:20px;">
+        <button class="upgrade-btn" onclick="upgradeToPro()">Upgrade to Pro for $5</button>
+        <p>Unlock advanced analytics, Grok-powered insights, and tools to improve your trading journey!</p>
+      </div>
+    </div>
   </div>
 
-  <!-- Overall Stats -->
-  <div class="overall-stats" id="overallStats" style="display:none;">
-    <h2>Overall Trading Performance</h2>
-    <p><strong>Trader:</strong> <span id="overallName">Not Set</span></p>
-    <p><strong>Starting Balance:</strong> $<span id="overallStart">0.00</span></p>
-    <p><strong>Total Net Profit:</strong> $<span id="overallNet">0.00</span></p>
-    <p><strong>Return %:</strong> <span id="overallReturn">0.00</span>%</p>
-    <p><strong>Current Balance:</strong> $<span id="overallBalance">0.00</span></p>
-    <p><strong>Total Trades:</strong> <span id="overallTotal">0</span></p>
-    <p><strong>Overall Win Rate:</strong> <span id="overallWinRate">0%</span></p>
-    <p><strong>Avg Win:</strong> $<span id="overallAvgWin">0.00</span> | <strong>Avg Loss:</strong> $<span id="overallAvgLoss">0.00</span></p>
-    <p><strong>Profit Factor:</strong> <span id="overallPF">0.00</span></p>
-    <p><strong>Total Fees Paid:</strong> $<span id="overallFees">0.00</span></p>
+  <!-- Bottom Menu -->
+  <div class="bottom-menu">
+    <button class="menu-btn active" onclick="showPage('trades')">📊 Trades</button>
+    <button class="menu-btn" onclick="showPage('profile')">👤 Profile</button>
   </div>
 
   <script>
     const { DateTime } = luxon;
-    let trades = JSON.parse(localStorage.getItem('traderTrades')) || [];
-    let profile = JSON.parse(localStorage.getItem('traderProfile')) || { name: '', startingBalance: 0, riskPercent: 1 };
-    let editingIndex = -1; // Track which trade is being edited
+    let trades = JSON.parse(localStorage.getItem('tradoorTrades')) || []; // Updated key for Tradoor
+    let profile = JSON.parse(localStorage.getItem('tradoorProfile')) || { name: '', startingBalance: 0, riskPercent: 1, isPro: false };
+    let editingIndex = -1;
+    const stripe = Stripe('pk_test_your_public_key_here'); // Replace with real Stripe PK
+
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[onclick="showPage('${pageId}')"]`).classList.add('active');
+      if (pageId === 'trades') {
+        renderTrades();
+        updateStats();
+      } else if (pageId === 'profile') {
+        updateProfileDisplay();
+      }
+    }
 
     function calculatePnL(trade) {
       if (!trade.entry || trade.entry === 0) return 0;
@@ -210,7 +298,7 @@
     }
 
     function saveTrades() {
-      localStorage.setItem('traderTrades', JSON.stringify(trades));
+      localStorage.setItem('tradoorTrades', JSON.stringify(trades));
       renderTrades();
       updateStats();
     }
@@ -219,7 +307,7 @@
       profile.name = document.getElementById('traderName').value.trim() || 'Trader';
       profile.startingBalance = parseFloat(document.getElementById('startingBalance').value) || 0;
       profile.riskPercent = parseFloat(document.getElementById('riskPercent').value) || 1;
-      localStorage.setItem('traderProfile', JSON.stringify(profile));
+      localStorage.setItem('tradoorProfile', JSON.stringify(profile));
       updateProfileDisplay();
       alert('Profile saved!');
     }
@@ -227,7 +315,7 @@
     function updateProfileDisplay() {
       const display = document.getElementById('profileDisplay');
       if (profile.name || profile.startingBalance > 0) {
-        display.innerHTML = `<strong>${profile.name}</strong> | Starting: $${profile.startingBalance.toFixed(2)} | Risk: ${profile.riskPercent}% per trade`;
+        display.innerHTML = `<strong>${profile.name}</strong><br>Starting: $${profile.startingBalance.toFixed(2)}<br>Risk: ${profile.riskPercent}% per trade`;
       } else {
         display.innerHTML = 'No profile set yet';
       }
@@ -246,7 +334,7 @@
       };
 
       if (!trade.entry || !trade.exit || !trade.size) {
-        alert("Please fill Entry Price, Exit Price, and Size");
+        alert("Fill Entry, Exit, and Size");
         return;
       }
 
@@ -256,7 +344,6 @@
       trades.push(trade);
       saveTrades();
 
-      // Clear inputs
       document.getElementById('newEntry').value = '';
       document.getElementById('newExit').value = '';
       document.getElementById('newSize').value = '';
@@ -266,11 +353,11 @@
 
     function startEdit(index) {
       editingIndex = index;
-      renderTrades(); // Re-render with edit inputs
+      renderTrades();
     }
 
-    function saveEdit(index) {
-      const row = document.querySelectorAll('#tradesBody tr')[index];
+    function saveEdit(displayIndex) {
+      const row = document.querySelectorAll('#tradesBody tr')[displayIndex];
       const inputs = row.querySelectorAll('input, select');
       const updatedTrade = {
         date: inputs[0].value,
@@ -284,17 +371,18 @@
       };
 
       if (!updatedTrade.entry || !updatedTrade.exit || !updatedTrade.size) {
-        alert("Entry, Exit, and Size are required");
+        alert("Entry, Exit, Size required");
         return;
       }
 
       updatedTrade.volume = calculateVolume(updatedTrade);
       updatedTrade.pnl = calculatePnL(updatedTrade);
 
-      trades[trades.indexOf(trades.find((t, i) => i === index + (document.getElementById('dateFilter').value ? trades.filter(t => t.date === document.getElementById('dateFilter').value).indexOf(t) : i))] = updatedTrade;
-      // Simpler: since we render from full trades list, just update the actual trade
-      const globalIndex = trades.indexOf(trades.find(t => t === trades[index])); // Rough, but works for now
-      trades = trades.map((t, i) => i === index ? updatedTrade : t);
+      const globalIndex = trades.findIndex((t, i) => {
+        const filteredIndex = document.getElementById('dateFilter').value ? trades.filter(tr => tr.date === document.getElementById('dateFilter').value).indexOf(t) : i;
+        return filteredIndex === displayIndex;
+      });
+      if (globalIndex !== -1) trades[globalIndex] = updatedTrade;
 
       editingIndex = -1;
       saveTrades();
@@ -305,9 +393,9 @@
       renderTrades();
     }
 
-    function deleteTrade(index) {
-      if (confirm("Delete this trade?")) {
-        trades.splice(index, 1);
+    function deleteTrade(globalIndex) {
+      if (confirm("Delete?")) {
+        trades.splice(globalIndex, 1);
         saveTrades();
       }
     }
@@ -329,12 +417,12 @@
           row.innerHTML = `
             <td><input type="date" value="${trade.date}"></td>
             <td><input type="text" value="${trade.pair}"></td>
-            <td><select><option ${trade.direction === 'Long' ? 'selected' : ''}>Long</option><option ${trade.direction === 'Short' ? 'selected' : ''}>Short</option></select></td>
+            <td><select>${['Long','Short'].map(d => `<option ${d===trade.direction?'selected':''}>${d}</option>`).join('')}</select></td>
             <td><input type="number" step="0.01" value="${trade.entry}"></td>
             <td><input type="number" step="0.01" value="${trade.exit}"></td>
             <td><input type="number" step="0.01" value="${trade.size}"></td>
             <td><input type="number" value="${trade.leverage}"></td>
-            <td>${(trade.size * trade.leverage).toFixed(2)}</td>
+            <td>${trade.volume.toFixed(2)}</td>
             <td><input type="number" step="0.01" value="${trade.fees}"></td>
             <td>${trade.pnl.toFixed(2)}</td>
             <td>
@@ -356,7 +444,7 @@
             <td>${trade.pnl.toFixed(2)}</td>
             <td>
               <button class="edit-btn" onclick="startEdit(${globalIndex})">Edit</button>
-              <button class="delete-btn" onclick="deleteTrade(${globalIndex})">Delete</button>
+              <button class="delete-btn" onclick="deleteTrade(${globalIndex})">Del</button>
             </td>
           `;
         }
@@ -364,17 +452,14 @@
       });
     }
 
-    // Rest of functions (updateStats, calculateOverall, exportCSV, etc.) remain the same but updated for new fields
     function updateStats(filterDate = null) {
       const filtered = filterDate ? trades.filter(t => t.date === filterDate) : trades;
       const wins = filtered.filter(t => t.pnl > 0);
       const losses = filtered.filter(t => t.pnl < 0);
-
       const totalWins = wins.reduce((sum, t) => sum + t.pnl, 0);
       const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0));
-
-      const avgWin = wins.length ? (totalWins / wins.length) : 0;
-      const avgLoss = losses.length ? (totalLosses / losses.length) : 0;
+      const avgWin = wins.length ? totalWins / wins.length : 0;
+      const avgLoss = losses.length ? totalLosses / losses.length : 0;
       const winRate = filtered.length ? (wins.length / filtered.length * 100) : 0;
       const totalPnl = filtered.reduce((sum, t) => sum + t.pnl, 0);
       const profitFactor = totalLosses === 0 ? '∞' : (totalWins / totalLosses).toFixed(2);
@@ -391,10 +476,7 @@
     }
 
     function calculateOverall() {
-      if (trades.length === 0) {
-        alert("No trades yet!");
-        return;
-      }
+      if (trades.length === 0) { alert("No trades yet! Input your history to start improving."); return; }
 
       const wins = trades.filter(t => t.pnl > 0);
       const losses = trades.filter(t => t.pnl < 0);
@@ -402,12 +484,11 @@
       const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0));
       const netProfit = trades.reduce((sum, t) => sum + t.pnl, 0);
       const totalFees = trades.reduce((sum, t) => sum + t.fees, 0);
-
       const avgWin = wins.length ? totalWins / wins.length : 0;
       const avgLoss = losses.length ? totalLosses / losses.length : 0;
-      const winRate = (wins.length / trades.length * 100);
+      const winRate = trades.length ? (wins.length / trades.length * 100) : 0;
       const profitFactor = totalLosses === 0 ? '∞' : (totalWins / totalLosses).toFixed(2);
-      const returnPct = profile.startingBalance > 0 ? ((netProfit / profile.startingBalance) * 100) : 0;
+      const returnPct = profile.startingBalance > 0 ? (netProfit / profile.startingBalance) * 100 : 0;
       const currentBalance = profile.startingBalance + netProfit;
 
       document.getElementById('overallName').textContent = profile.name || 'Trader';
@@ -423,30 +504,86 @@
       document.getElementById('overallFees').textContent = totalFees.toFixed(2);
 
       document.getElementById('overallStats').style.display = 'block';
+
+      // Pro-only advanced analytics
+      if (profile.isPro) {
+        document.getElementById('proUpgrade').style.display = 'none';
+        document.getElementById('proAnalytics').classList.add('active');
+
+        const riskReward = avgWin / avgLoss || 0;
+        let maxDrawdown = 0;
+        let peak = profile.startingBalance;
+        let balance = profile.startingBalance;
+        trades.sort((a, b) => a.date.localeCompare(b.date)).forEach(t => {
+          balance += t.pnl;
+          if (balance > peak) peak = balance;
+          const dd = (peak - balance) / peak * 100;
+          if (dd > maxDrawdown) maxDrawdown = dd;
+        });
+        const totalVolume = trades.reduce((sum, t) => sum + t.volume, 0);
+        const avgLeverage = trades.length ? trades.reduce((sum, t) => sum + t.leverage, 0) / trades.length : 0;
+        const pnlReturns = trades.map(t => t.pnl / t.size * 100); // % returns
+        const avgReturn = pnlReturns.reduce((sum, r) => sum + r, 0) / pnlReturns.length || 0;
+        const stdDev = Math.sqrt(pnlReturns.reduce((sum, r) => sum + (r - avgReturn)**2, 0) / pnlReturns.length) || 1;
+        const sharpe = avgReturn / stdDev; // Simplified Sharpe (no risk-free rate)
+
+        const pairPnL = trades.reduce((acc, t) => {
+          acc[t.pair] = (acc[t.pair] || 0) + t.pnl;
+          return acc;
+        }, {});
+        const bestPair = Object.entries(pairPnL).reduce((best, [pair, pnl]) => pnl > best.pnl ? {pair, pnl} : best, {pair: 'N/A', pnl: -Infinity}).pair;
+        const worstPair = Object.entries(pairPnL).reduce((worst, [pair, pnl]) => pnl < worst.pnl ? {pair, pnl} : worst, {pair: 'N/A', pnl: Infinity}).pair;
+
+        const longTrades = trades.filter(t => t.direction === 'Long');
+        const shortTrades = trades.filter(t => t.direction === 'Short');
+        const longWinRate = longTrades.length ? (longTrades.filter(t => t.pnl > 0).length / longTrades.length * 100) : 0;
+        const shortWinRate = shortTrades.length ? (shortTrades.filter(t => t.pnl > 0).length / shortTrades.length * 100) : 0;
+
+        document.getElementById('riskReward').textContent = riskReward.toFixed(2);
+        document.getElementById('maxDrawdown').textContent = maxDrawdown.toFixed(2);
+        document.getElementById('totalVolume').textContent = totalVolume.toFixed(2);
+        document.getElementById('avgLeverage').textContent = avgLeverage.toFixed(1) + 'x';
+        document.getElementById('sharpeRatio').textContent = sharpe.toFixed(2);
+        document.getElementById('bestPair').textContent = bestPair;
+        document.getElementById('worstPair').textContent = worstPair;
+        document.getElementById('longWinRate').textContent = longWinRate.toFixed(1) + '%';
+        document.getElementById('shortWinRate').textContent = shortWinRate.toFixed(1) + '%';
+      } else {
+        document.getElementById('proUpgrade').style.display = 'block';
+        document.getElementById('proAnalytics').classList.remove('active');
+      }
+    }
+
+    function getGrokAnalysis() {
+      const csvData = trades.map(t => `${t.date},${t.pair},${t.direction},${t.entry},${t.exit},${t.size},${t.leverage},${t.volume.toFixed(2)},${t.fees},${t.pnl.toFixed(2)}`).join('\n');
+      const prompt = `Analyze my trading history as a Tradoor user. Here's my CSV data (Date,Pair,Direction,Entry,Exit,Size,Leverage,Volume,Fees,PnL):\n${csvData}\n\nProfile: Name=${profile.name}, Starting Balance=$${profile.startingBalance}, Risk %=${profile.riskPercent}\nProvide personalized advice to improve my journey, identify patterns, risks, and strategies to become a better trader.`;
+      document.getElementById('grokPrompt').value = prompt;
+      document.getElementById('grokPrompt').style.display = 'block';
+      alert('Copy the prompt below and paste it to Grok for advanced AI analysis!');
+    }
+
+    async function upgradeToPro() {
+      // Simulate Stripe checkout (replace with real integration)
+      const session = { id: 'test_session_id' }; // In real: await fetch('/create-checkout-session', {method: 'POST'}).then(res => res.json());
+      stripe.redirectToCheckout({ sessionId: session.id });
+      // On success (webhook): set profile.isPro = true; saveProfile();
+      profile.isPro = true; // For demo
+      saveProfile();
+      calculateOverall();
     }
 
     function exportCSV(currentViewOnly = false) {
-      const data = currentViewOnly 
-        ? (document.getElementById('dateFilter').value ? trades.filter(t => t.date === document.getElementById('dateFilter').value) : trades)
-        : trades;
-
-      if (data.length === 0) {
-        alert("No trades to export!");
-        return;
-      }
-
-      let csv = "Date,Pair,Direction,Entry Price,Exit Price,Size ($),Leverage,Trade Volume ($),Fees,PnL\n";
-      data.forEach(t => {
-        csv += `${t.date},${t.pair},${t.direction},${t.entry},${t.exit},${t.size},${t.leverage},${t.volume.toFixed(2)},${t.fees},${t.pnl.toFixed(2)}\n`;
-      });
-
+      const data = currentViewOnly ? (document.getElementById('dateFilter').value ? trades.filter(t => t.date === document.getElementById('dateFilter').value) : trades) : trades;
+      if (data.length === 0) { alert("No trades"); return; }
+      let csv = "Date,Pair,Direction,Entry,Exit,Size,Leverage,Volume,Fees,PnL\n";
+      data.forEach(t => csv += `${t.date},${t.pair},${t.direction},${t.entry},${t.exit},${t.size},${t.leverage},${t.volume.toFixed(2)},${t.fees},${t.pnl.toFixed(2)}\n`);
       const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `trader_${currentViewOnly ? 'current' : 'all'}_${DateTime.now().toFormat('yyyy-MM-dd')}.csv`;
+      a.download = `tradoor_${currentViewOnly ? 'view' : 'all'}_${DateTime.now().toFormat('yyyy-MM-dd')}.csv`;
       a.click();
-      window.URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url);
     }
 
     function filterByDate() {
