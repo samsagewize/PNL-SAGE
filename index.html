@@ -3,87 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tradoor - Minimal Trading Journal</title>
+  <title>Tradoor - Your Trading Journey Companion</title>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3.4.4/build/global/luxon.min.js"></script>
+  <script src="https://js.stripe.com/v3/"></script> <!-- Stripe for Pro upgrades -->
   <style>
-    * { box-sizing: border-box; }
     body { 
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: Arial, Helvetica, sans-serif; 
       margin: 0;
-      padding: 0 0 90px 0;
-      background: #1a0033;
+      padding: 0 0 80px 0; /* Space for bottom menu */
+      background: #1a0033; /* Dark purple background */
       color: #e6e6ff;
       min-height: 100vh;
     }
+    h1 { text-align: center; color: #bb86fc; padding: 20px 0; margin: 0; }
+    a { color: #bb86fc; text-decoration: none; }
+    /* Top bar with profile */
     .top-bar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
+      justify-content: flex-end;
+      padding: 10px 20px;
       background: #2d1b4d;
-      position: sticky;
-      top: 0;
-      z-index: 10;
     }
-    .logo { font-size: 1.8em; font-weight: bold; }
-    #profilePic { width: 48px; height: 48px; border-radius: 50%; border: 3px solid #bb86fc; object-fit: cover; }
-    .profile-name { font-weight: bold; margin-left: 10px; }
-    h1 { text-align: center; color: #bb86fc; padding: 20px 0; margin: 0; font-size: 2em; }
-    .page { padding: 20px; }
-    .welcome { text-align: center; margin: 40px 0; }
-    .welcome img { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #bb86fc; object-fit: cover; }
-    .welcome h2 { margin: 16px 0 8px; font-size: 1.8em; }
-    .welcome p { opacity: 0.9; font-size: 1.1em; }
-    /* Big PnL Button */
-    .pnl-button {
-      display: block;
-      width: 90%;
-      max-width: 400px;
-      margin: 40px auto;
-      padding: 24px;
-      background: linear-gradient(135deg, #bb86fc, #9b59b6);
+    .profile-link {
+      background: #bb86fc;
       color: #1a0033;
-      font-size: 1.5em;
+      padding: 8px 16px;
+      border-radius: 20px;
       font-weight: bold;
-      text-align: center;
-      border-radius: 20px;
-      border: none;
-      cursor: pointer;
-      box-shadow: 0 8px 20px rgba(187, 134, 252, 0.4);
     }
-    .pnl-button:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(187, 134, 252, 0.6); }
-    /* Popup Modal */
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: center; }
-    .modal.active { display: flex; }
-    .modal-content {
+    /* Pages */
+    .page { display: none; padding: 20px; }
+    .page.active { display: block; }
+    /* Profile Page */
+    .profile-bar {
       background: #2d1b4d;
-      padding: 30px;
-      border-radius: 20px;
-      width: 90%;
-      max-width: 500px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      max-width: 600px;
+      margin: 20px auto;
       text-align: center;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     }
-    .close-modal { float: right; font-size: 2em; cursor: pointer; color: #bb86fc; }
-    .modal h2 { color: #bb86fc; margin-top: 0; }
-    .modal p { font-size: 1.2em; margin: 16px 0; }
-    .big-number { font-size: 2.5em; font-weight: bold; color: #bb86fc; margin: 10px 0; }
-    .positive { color: #00ff9d; }
-    .negative { color: #ff3b5c; }
-    /* Table section - collapsible for space */
-    .section-title {
-      text-align: center;
-      margin: 40px 0 20px;
-      font-size: 1.4em;
-      color: #bb86fc;
+    .profile-bar input, .profile-bar button {
+      margin: 10px;
+      padding: 12px;
+      width: 80%;
+      border-radius: 8px;
+      border: none;
     }
-    .table-container { overflow-x: auto; margin: 20px 0; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-    table { width: 100%; min-width: 800px; border-collapse: collapse; background: #2d1b4d; }
-    th, td { padding: 14px 8px; text-align: center; border: 1px solid #4a2a7d; font-size: 0.95em; }
-    th { background: #bb86fc; color: #1a0033; }
-    tfoot input, tfoot select { padding: 12px; font-size: 1em; }
-    button { padding: 12px 20px; background: #bb86fc; color: #1a0033; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; }
-    .add-btn { width: 100%; padding: 16px; font-size: 1.2em; }
+    .profile-bar button { background: #bb86fc; color: #1a0033; font-weight: bold; cursor: pointer; }
+    #profileDisplay { margin-top: 20px; font-size: 1.2em; }
+    /* Table and stats */
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 20px 0; 
+      background: #2d1b4d; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+    }
+    th, td { 
+      padding: 12px; 
+      text-align: center; 
+      border: 1px solid #4a2a7d; 
+    }
+    th { 
+      background: #bb86fc; 
+      color: #1a0033; 
+    }
+    input, select { 
+      width: 90%; 
+      padding: 8px; 
+      background: #4a2a7d;
+      color: #e6e6ff;
+      border: 1px solid #bb86fc; 
+      border-radius: 4px; 
+      box-sizing: border-box;
+    }
+    button { 
+      padding: 8px 16px; 
+      background: #bb86fc; 
+      color: #1a0033; 
+      border: none; 
+      border-radius: 4px; 
+      cursor: pointer; 
+      margin: 5px;
+      font-weight: bold;
+    }
+    button:hover { background: #cf9fff; }
+    .delete-btn { background: #e74c3c; color: white; }
+    .edit-btn { background: #f39c12; color: white; }
+    .export-btn { background: #9b59b6; color: white; }
+    .calc-btn { background: #34495e; color: white; }
+    .save-edit-btn { background: #27ae60; color: white; }
+    .cancel-edit-btn { background: #95a5a6; color: white; }
+    .upgrade-btn { background: #ffd700; color: #1a0033; font-weight: bold; }
+    .pro-feature { display: none; }
+    .pro-feature.active { display: block; }
+    .stats, .overall-stats { 
+      background: #2d1b4d; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5); 
+      margin: 20px 0; 
+    }
+    .stats h2, .overall-stats h2 { margin-top: 0; color: #bb86fc; }
+    .filter-bar { text-align: center; margin: 20px 0; }
+    .highlight-win { background: #0d402d !important; }
+    .highlight-loss { background: #590000 !important; }
+    tr.editing { background: #4a0072 !important; }
+    /* Bottom Menu */
     .bottom-menu {
       position: fixed;
       bottom: 0;
@@ -92,122 +120,205 @@
       background: #2d1b4d;
       display: flex;
       justify-content: space-around;
-      padding: 16px 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+      padding: 10px 0;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
       z-index: 100;
     }
-    .menu-btn { background: none; border: none; color: #bb86fc; font-size: 2em; cursor: pointer; flex: 1; }
-    .menu-btn.active { color: #ffffff; }
-    @media (max-width: 480px) {
-      h1 { font-size: 1.8em; }
-      .pnl-button { font-size: 1.3em; padding: 20px; }
-      .modal-content { padding: 20px; }
-      .big-number { font-size: 2em; }
+    .menu-btn {
+      background: none;
+      border: none;
+      color: #bb86fc;
+      font-size: 1.5em;
+      cursor: pointer;
+      padding: 10px;
+    }
+    .menu-btn.active {
+      color: #ffffff;
+      border-top: 3px solid #bb86fc;
+      padding-top: 7px;
+    }
+    @media (max-width: 768px) {
+      .menu-btn { font-size: 1.8em; }
     }
   </style>
 </head>
 <body>
   <div class="top-bar">
-    <div class="logo">Tradoor</div>
-    <div onclick="showPage('profile')" style="display:flex;align-items:center;cursor:pointer;">
-      <img id="profilePic" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Trader" alt="Profile">
-      <div class="profile-name" id="topProfileName">Trader</div>
+    <div class="profile-link" onclick="showPage('profile')">Profile</div>
+  </div>
+
+  <h1>Tradoor - Elevate Your Trading Journey</h1>
+
+  <!-- Profile Page -->
+  <div id="profile" class="page">
+    <div class="profile-bar">
+      <h3>Set Your Tradoor Profile</h3>
+      <input type="text" id="traderName" placeholder="Your Trading Name">
+      <input type="number" id="startingBalance" placeholder="Starting Balance ($)" step="0.01">
+      <input type="number" id="riskPercent" placeholder="Risk % per Trade" step="0.1" min="0" max="100">
+      <button onclick="saveProfile()">Save Profile</button>
+      <div id="profileDisplay"></div>
     </div>
   </div>
 
-  <h1>Tradoor</h1>
-
-  <div class="page active" id="trades">
-    <div class="welcome">
-      <img id="dashboardProfilePic" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Trader" alt="Profile">
-      <h2>Welcome, <span id="welcomeName">Trader</span></h2>
-      <p>Track. Improve. Win.</p>
+  <!-- Main Trades Page -->
+  <div id="trades" class="page active">
+    <div class="filter-bar">
+      <label>Filter by Date: </label>
+      <input type="date" id="dateFilter">
+      <button onclick="filterByDate()">Show Day</button>
+      <button onclick="showAll()">Show All</button>
+      <button class="export-btn" onclick="exportCSV(false)">Export All</button>
+      <button class="export-btn" onclick="exportCSV(true)">Export View</button>
+      <button class="calc-btn" onclick="calculateOverall()">Overall Stats</button>
     </div>
 
-    <!-- Big PnL Summary Button -->
-    <button class="pnl-button" onclick="showPnLSummary()">View My PnL Summary</button>
+    <table id="tradesTable">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Pair</th>
+          <th>Dir</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Size ($)</th>
+          <th>Leverage</th>
+          <th>Volume ($)</th>
+          <th>Fees</th>
+          <th>PnL ($)</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="tradesBody"></tbody>
+      <tfoot>
+        <tr>
+          <td><input type="date" id="newDate"></td>
+          <td><input type="text" id="newPair" placeholder="BTCUSDT"></td>
+          <td>
+            <select id="newDirection">
+              <option>Long</option>
+              <option>Short</option>
+            </select>
+          </td>
+          <td><input type="number" step="0.01" id="newEntry"></td>
+          <td><input type="number" step="0.01" id="newExit"></td>
+          <td><input type="number" step="0.01" id="newSize" placeholder="100"></td>
+          <td><input type="number" id="newLeverage" value="10"></td>
+          <td></td>
+          <td><input type="number" step="0.01" id="newFees" value="0"></td>
+          <td></td>
+          <td><button onclick="addTrade()">Add</button></td>
+        </tr>
+      </tfoot>
+    </table>
 
-    <!-- Trades Table (Collapsible feel with spacing) -->
-    <div class="section-title">Your Trade History</div>
-    <div class="table-container">
-      <table id="tradesTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Pair</th>
-            <th>Dir</th>
-            <th>Entry</th>
-            <th>Exit</th>
-            <th>Size ($)</th>
-            <th>Lvg</th>
-            <th>Vol ($)</th>
-            <th>Fees</th>
-            <th>PnL ($)</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="tradesBody"></tbody>
-        <tfoot>
-          <tr>
-            <td><input type="date" id="newDate"></td>
-            <td><input type="text" id="newPair" placeholder="BTCUSDT"></td>
-            <td><select id="newDirection"><option>Long</option><option>Short</option></select></td>
-            <td><input type="number" step="0.01" id="newEntry"></td>
-            <td><input type="number" step="0.01" id="newExit"></td>
-            <td><input type="number" step="0.01" id="newSize" placeholder="100"></td>
-            <td><input type="number" id="newLeverage" value="10"></td>
-            <td></td>
-            <td><input type="number" step="0.01" id="newFees" value="0"></td>
-            <td></td>
-            <td><button class="add-btn" onclick="addTrade()">Add Trade</button></td>
-          </tr>
-        </tfoot>
-      </table>
+    <div class="stats" id="stats">
+      <h2>Current View Stats</h2>
+      <p><strong>Period:</strong> <span id="statDate">All Time</span></p>
+      <p><strong>Trades:</strong> <span id="totalTrades">0</span></p>
+      <p><strong>Wins:</strong> <span id="wins">0</span> | <strong>Losses:</strong> <span id="losses">0</span></p>
+      <p><strong>Avg Win:</strong> $<span id="avgWin">0.00</span> | <strong>Avg Loss:</strong> $<span id="avgLoss">0.00</span></p>
+      <p><strong>Win Rate:</strong> <span id="winRate">0%</span></p>
+      <p><strong>Total PnL:</strong> $<span id="totalPnl">0.00</span></p>
+      <p><strong>Profit Factor:</strong> <span id="profitFactor">0.00</span></p>
     </div>
-    <!-- Add more space at bottom -->
-    <div style="height:100px;"></div>
-  </div>
 
-  <!-- PnL Summary Modal -->
-  <div id="pnlModal" class="modal">
-    <div class="modal-content">
-      <span class="close-modal" onclick="closePnLSummary()">×</span>
-      <h2>Your PnL Summary</h2>
-      <div class="big-number" id="modalTotalPnL">$0.00</div>
-      <p>Total Trades: <strong id="modalTotalTrades">0</strong></p>
-      <p>Win Rate: <strong id="modalWinRate">0%</strong></p>
-      <p>Avg Win: <strong id="modalAvgWin">$0.00</strong> | Avg Loss: <strong id="modalAvgLoss">$0.00</strong></p>
-      <p>Profit Factor: <strong id="modalProfitFactor">0.00</strong></p>
-      <p>Current Balance: <strong id="modalBalance">$0.00</strong></p>
+    <div class="overall-stats" id="overallStats" style="display:none;">
+      <h2>Overall Performance</h2>
+      <p><strong>Trader:</strong> <span id="overallName">Not Set</span></p>
+      <p><strong>Starting:</strong> $<span id="overallStart">0.00</span></p>
+      <p><strong>Net Profit:</strong> $<span id="overallNet">0.00</span></p>
+      <p><strong>Return:</strong> <span id="overallReturn">0.00</span>%</p>
+      <p><strong>Balance:</strong> $<span id="overallBalance">0.00</span></p>
+      <p><strong>Trades:</strong> <span id="overallTotal">0</span></p>
+      <p><strong>Win Rate:</strong> <span id="overallWinRate">0%</span></p>
+      <p><strong>Avg Win:</strong> $<span id="overallAvgWin">0.00</span> | <strong>Avg Loss:</strong> $<span id="overallAvgLoss">0.00</span></p>
+      <p><strong>Profit Factor:</strong> <span id="overallPF">0.00</span></p>
+      <p><strong>Fees Paid:</strong> $<span id="overallFees">0.00</span></p>
+      <!-- Pro Features -->
+      <div id="proAnalytics" class="pro-feature">
+        <h3>Pro Analytics (Powered by Grok)</h3>
+        <p><strong>Risk-Reward Ratio:</strong> <span id="riskReward">0.00</span></p>
+        <p><strong>Max Drawdown:</strong> <span id="maxDrawdown">0.00</span>%</p>
+        <p><strong>Total Volume Traded:</strong> $<span id="totalVolume">0.00</span></p>
+        <p><strong>Average Leverage:</strong> <span id="avgLeverage">0x</span></p>
+        <p><strong>Sharpe Ratio (Approx):</strong> <span id="sharpeRatio">0.00</span></p>
+        <p><strong>Best Pair:</strong> <span id="bestPair">N/A</span></p>
+        <p><strong>Worst Pair:</strong> <span id="worstPair">N/A</span></p>
+        <p><strong>Long vs Short Win Rate:</strong> Long <span id="longWinRate">0%</span> | Short <span id="shortWinRate">0%</span></p>
+        <button onclick="getGrokAnalysis()">Get Grok's Personalized Advice</button>
+        <p>Copy this prompt and ask Grok for in-depth analysis:</p>
+        <textarea id="grokPrompt" rows="10" style="width:100%; background:#4a2a7d; color:#e6e6ff; border:1px solid #bb86fc;"></textarea>
+      </div>
+      <div id="proUpgrade" style="text-align:center; margin:20px;">
+        <button class="upgrade-btn" onclick="upgradeToPro()">Upgrade to Pro for $5</button>
+        <p>Unlock advanced analytics, Grok-powered insights, and tools to improve your trading journey!</p>
+      </div>
     </div>
   </div>
 
   <!-- Bottom Menu -->
   <div class="bottom-menu">
-    <button class="menu-btn active">📊</button>
-    <button class="menu-btn" onclick="showPage('profile')">👤</button>
+    <button class="menu-btn active" onclick="showPage('trades')">📊 Trades</button>
+    <button class="menu-btn" onclick="showPage('profile')">👤 Profile</button>
   </div>
 
   <script>
-    // Same core functions as before (trades, profile, etc.) + new modal
     const { DateTime } = luxon;
-    let trades = JSON.parse(localStorage.getItem('tradoorTrades')) || [];
-    let profile = JSON.parse(localStorage.getItem('tradoorProfile')) || { name: 'Trader', startingBalance: 0, riskPercent: 1, profilePic: null };
+    let trades = JSON.parse(localStorage.getItem('tradoorTrades')) || []; // Updated key for Tradoor
+    let profile = JSON.parse(localStorage.getItem('tradoorProfile')) || { name: '', startingBalance: 0, riskPercent: 1, isPro: false };
+    let editingIndex = -1;
+    const stripe = Stripe('pk_test_your_public_key_here'); // Replace with real Stripe PK
 
-    function generateAvatar(seed) { return `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(seed || 'Trader')}`; }
-
-    function updateAllProfilePics() {
-      const src = profile.profilePic || generateAvatar(profile.name);
-      document.getElementById('profilePic').src = src;
-      document.getElementById('dashboardProfilePic').src = src;
-      document.getElementById('topProfileName').textContent = profile.name;
-      document.getElementById('welcomeName').textContent = profile.name;
+    function showPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(pageId).classList.add('active');
+      document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector(`[onclick="showPage('${pageId}')"]`).classList.add('active');
+      if (pageId === 'trades') {
+        renderTrades();
+        updateStats();
+      } else if (pageId === 'profile') {
+        updateProfileDisplay();
+      }
     }
 
     function calculatePnL(trade) {
-      if (!trade.entry) return 0;
-      const change = trade.direction === 'Long' ? (trade.exit - trade.entry) / trade.entry : (trade.entry - trade.exit) / trade.entry;
-      return (change * trade.size * trade.leverage) - trade.fees;
+      if (!trade.entry || trade.entry === 0) return 0;
+      const priceChange = trade.direction === 'Long' 
+        ? (trade.exit - trade.entry) / trade.entry
+        : (trade.entry - trade.exit) / trade.entry;
+      let pnl = priceChange * trade.size * trade.leverage;
+      pnl -= trade.fees;
+      return pnl;
+    }
+
+    function calculateVolume(trade) {
+      return trade.size * trade.leverage;
+    }
+
+    function saveTrades() {
+      localStorage.setItem('tradoorTrades', JSON.stringify(trades));
+      renderTrades();
+      updateStats();
+    }
+
+    function saveProfile() {
+      profile.name = document.getElementById('traderName').value.trim() || 'Trader';
+      profile.startingBalance = parseFloat(document.getElementById('startingBalance').value) || 0;
+      profile.riskPercent = parseFloat(document.getElementById('riskPercent').value) || 1;
+      localStorage.setItem('tradoorProfile', JSON.stringify(profile));
+      updateProfileDisplay();
+      alert('Profile saved!');
+    }
+
+    function updateProfileDisplay() {
+      const display = document.getElementById('profileDisplay');
+      if (profile.name || profile.startingBalance > 0) {
+        display.innerHTML = `<strong>${profile.name}</strong><br>Starting: $${profile.startingBalance.toFixed(2)}<br>Risk: ${profile.riskPercent}% per trade`;
+      } else {
+        display.innerHTML = 'No profile set yet';
+      }
     }
 
     function addTrade() {
@@ -221,16 +332,18 @@
         leverage: parseFloat(document.getElementById('newLeverage').value) || 1,
         fees: parseFloat(document.getElementById('newFees').value) || 0,
       };
-      if (!trade.entry || !trade.exit || !trade.size) return alert("Fill Entry, Exit, Size");
-      trade.volume = trade.size * trade.leverage;
-      trade.pnl = calculatePnL(trade);
-      trades.push(trade);
-      localStorage.setItem('tradoorTrades', JSON.stringify(trades));
-      renderTrades();
-      clearAddForm();
-    }
 
-    function clearAddForm() {
+      if (!trade.entry || !trade.exit || !trade.size) {
+        alert("Fill Entry, Exit, and Size");
+        return;
+      }
+
+      trade.volume = calculateVolume(trade);
+      trade.pnl = calculatePnL(trade);
+
+      trades.push(trade);
+      saveTrades();
+
       document.getElementById('newEntry').value = '';
       document.getElementById('newExit').value = '';
       document.getElementById('newSize').value = '';
@@ -238,59 +351,260 @@
       document.getElementById('newPair').value = '';
     }
 
-    function renderTrades() {
+    function startEdit(index) {
+      editingIndex = index;
+      renderTrades();
+    }
+
+    function saveEdit(displayIndex) {
+      const row = document.querySelectorAll('#tradesBody tr')[displayIndex];
+      const inputs = row.querySelectorAll('input, select');
+      const updatedTrade = {
+        date: inputs[0].value,
+        pair: inputs[1].value.trim() || 'UNKNOWN',
+        direction: inputs[2].value,
+        entry: parseFloat(inputs[3].value) || 0,
+        exit: parseFloat(inputs[4].value) || 0,
+        size: parseFloat(inputs[5].value) || 0,
+        leverage: parseFloat(inputs[6].value) || 1,
+        fees: parseFloat(inputs[7].value) || 0,
+      };
+
+      if (!updatedTrade.entry || !updatedTrade.exit || !updatedTrade.size) {
+        alert("Entry, Exit, Size required");
+        return;
+      }
+
+      updatedTrade.volume = calculateVolume(updatedTrade);
+      updatedTrade.pnl = calculatePnL(updatedTrade);
+
+      const globalIndex = trades.findIndex((t, i) => {
+        const filteredIndex = document.getElementById('dateFilter').value ? trades.filter(tr => tr.date === document.getElementById('dateFilter').value).indexOf(t) : i;
+        return filteredIndex === displayIndex;
+      });
+      if (globalIndex !== -1) trades[globalIndex] = updatedTrade;
+
+      editingIndex = -1;
+      saveTrades();
+    }
+
+    function cancelEdit() {
+      editingIndex = -1;
+      renderTrades();
+    }
+
+    function deleteTrade(globalIndex) {
+      if (confirm("Delete?")) {
+        trades.splice(globalIndex, 1);
+        saveTrades();
+      }
+    }
+
+    function renderTrades(filterDate = null) {
       const tbody = document.getElementById('tradesBody');
       tbody.innerHTML = '';
-      trades.sort((a, b) => b.date.localeCompare(a.date)).forEach((trade, i) => {
+
+      let filtered = filterDate ? trades.filter(t => t.date === filterDate) : trades;
+      filtered.sort((a, b) => b.date.localeCompare(a.date) || (b.pnl - a.pnl));
+
+      filtered.forEach((trade, displayIndex) => {
+        const globalIndex = trades.indexOf(trade);
         const row = document.createElement('tr');
         row.className = trade.pnl > 0 ? 'highlight-win' : trade.pnl < 0 ? 'highlight-loss' : '';
-        row.innerHTML = `
-          <td>${trade.date}</td>
-          <td>${trade.pair}</td>
-          <td>${trade.direction.slice(0,1)}</td>
-          <td>${trade.entry.toFixed(2)}</td>
-          <td>${trade.exit.toFixed(2)}</td>
-          <td>${trade.size.toFixed(2)}</td>
-          <td>${trade.leverage}x</td>
-          <td>${trade.volume.toFixed(2)}</td>
-          <td>${trade.fees.toFixed(2)}</td>
-          <td>${trade.pnl.toFixed(2)}</td>
-          <td><button onclick="trades.splice(${i},1); localStorage.setItem('tradoorTrades', JSON.stringify(trades)); renderTrades();">Del</button></td>
-        `;
+        if (globalIndex === editingIndex) row.classList.add('editing');
+
+        if (globalIndex === editingIndex) {
+          row.innerHTML = `
+            <td><input type="date" value="${trade.date}"></td>
+            <td><input type="text" value="${trade.pair}"></td>
+            <td><select>${['Long','Short'].map(d => `<option ${d===trade.direction?'selected':''}>${d}</option>`).join('')}</select></td>
+            <td><input type="number" step="0.01" value="${trade.entry}"></td>
+            <td><input type="number" step="0.01" value="${trade.exit}"></td>
+            <td><input type="number" step="0.01" value="${trade.size}"></td>
+            <td><input type="number" value="${trade.leverage}"></td>
+            <td>${trade.volume.toFixed(2)}</td>
+            <td><input type="number" step="0.01" value="${trade.fees}"></td>
+            <td>${trade.pnl.toFixed(2)}</td>
+            <td>
+              <button class="save-edit-btn" onclick="saveEdit(${displayIndex})">Save</button>
+              <button class="cancel-edit-btn" onclick="cancelEdit()">Cancel</button>
+            </td>
+          `;
+        } else {
+          row.innerHTML = `
+            <td>${trade.date}</td>
+            <td>${trade.pair}</td>
+            <td>${trade.direction}</td>
+            <td>${trade.entry.toFixed(2)}</td>
+            <td>${trade.exit.toFixed(2)}</td>
+            <td>${trade.size.toFixed(2)}</td>
+            <td>${trade.leverage}x</td>
+            <td>${trade.volume.toFixed(2)}</td>
+            <td>${trade.fees.toFixed(2)}</td>
+            <td>${trade.pnl.toFixed(2)}</td>
+            <td>
+              <button class="edit-btn" onclick="startEdit(${globalIndex})">Edit</button>
+              <button class="delete-btn" onclick="deleteTrade(${globalIndex})">Del</button>
+            </td>
+          `;
+        }
         tbody.appendChild(row);
       });
     }
 
-    function showPnLSummary() {
-      const wins = trades.filter(t => t.pnl > 0);
-      const losses = trades.filter(t => t.pnl < 0);
-      const totalPnL = trades.reduce((s, t) => s + t.pnl, 0);
-      const winRate = trades.length ? (wins.length / trades.length * 100).toFixed(1) : 0;
-      const avgWin = wins.length ? (wins.reduce((s, t) => s + t.pnl, 0) / wins.length) : 0;
-      const avgLoss = losses.length ? (losses.reduce((s, t) => s + t.pnl, 0) / losses.length) : 0;
-      const profitFactor = avgLoss === 0 ? '∞' : (avgWin / -avgLoss).toFixed(2);
-      const balance = profile.startingBalance + totalPnL;
+    function updateStats(filterDate = null) {
+      const filtered = filterDate ? trades.filter(t => t.date === filterDate) : trades;
+      const wins = filtered.filter(t => t.pnl > 0);
+      const losses = filtered.filter(t => t.pnl < 0);
+      const totalWins = wins.reduce((sum, t) => sum + t.pnl, 0);
+      const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0));
+      const avgWin = wins.length ? totalWins / wins.length : 0;
+      const avgLoss = losses.length ? totalLosses / losses.length : 0;
+      const winRate = filtered.length ? (wins.length / filtered.length * 100) : 0;
+      const totalPnl = filtered.reduce((sum, t) => sum + t.pnl, 0);
+      const profitFactor = totalLosses === 0 ? '∞' : (totalWins / totalLosses).toFixed(2);
 
-      document.getElementById('modalTotalPnL').textContent = totalPnL.toFixed(2);
-      document.getElementById('modalTotalPnL').className = 'big-number ' + (totalPnL >= 0 ? 'positive' : 'negative');
-      document.getElementById('modalTotalTrades').textContent = trades.length;
-      document.getElementById('modalWinRate').textContent = winRate + '%';
-      document.getElementById('modalAvgWin').textContent = '$' + avgWin.toFixed(2);
-      document.getElementById('modalAvgLoss').textContent = '$' + avgLoss.toFixed(2);
-      document.getElementById('modalProfitFactor').textContent = profitFactor;
-      document.getElementById('modalBalance').textContent = '$' + balance.toFixed(2);
-
-      document.getElementById('pnlModal').classList.add('active');
+      document.getElementById('statDate').textContent = filterDate || 'All Time';
+      document.getElementById('totalTrades').textContent = filtered.length;
+      document.getElementById('wins').textContent = wins.length;
+      document.getElementById('losses').textContent = losses.length;
+      document.getElementById('avgWin').textContent = avgWin.toFixed(2);
+      document.getElementById('avgLoss').textContent = avgLoss.toFixed(2);
+      document.getElementById('winRate').textContent = winRate.toFixed(1) + '%';
+      document.getElementById('totalPnl').textContent = totalPnl.toFixed(2);
+      document.getElementById('profitFactor').textContent = profitFactor;
     }
 
-    function closePnLSummary() {
-      document.getElementById('pnlModal').classList.remove('active');
+    function calculateOverall() {
+      if (trades.length === 0) { alert("No trades yet! Input your history to start improving."); return; }
+
+      const wins = trades.filter(t => t.pnl > 0);
+      const losses = trades.filter(t => t.pnl < 0);
+      const totalWins = wins.reduce((sum, t) => sum + t.pnl, 0);
+      const totalLosses = Math.abs(losses.reduce((sum, t) => sum + t.pnl, 0));
+      const netProfit = trades.reduce((sum, t) => sum + t.pnl, 0);
+      const totalFees = trades.reduce((sum, t) => sum + t.fees, 0);
+      const avgWin = wins.length ? totalWins / wins.length : 0;
+      const avgLoss = losses.length ? totalLosses / losses.length : 0;
+      const winRate = trades.length ? (wins.length / trades.length * 100) : 0;
+      const profitFactor = totalLosses === 0 ? '∞' : (totalWins / totalLosses).toFixed(2);
+      const returnPct = profile.startingBalance > 0 ? (netProfit / profile.startingBalance) * 100 : 0;
+      const currentBalance = profile.startingBalance + netProfit;
+
+      document.getElementById('overallName').textContent = profile.name || 'Trader';
+      document.getElementById('overallStart').textContent = profile.startingBalance.toFixed(2);
+      document.getElementById('overallNet').textContent = netProfit.toFixed(2);
+      document.getElementById('overallReturn').textContent = returnPct.toFixed(2);
+      document.getElementById('overallBalance').textContent = currentBalance.toFixed(2);
+      document.getElementById('overallTotal').textContent = trades.length;
+      document.getElementById('overallWinRate').textContent = winRate.toFixed(1) + '%';
+      document.getElementById('overallAvgWin').textContent = avgWin.toFixed(2);
+      document.getElementById('overallAvgLoss').textContent = avgLoss.toFixed(2);
+      document.getElementById('overallPF').textContent = profitFactor;
+      document.getElementById('overallFees').textContent = totalFees.toFixed(2);
+
+      document.getElementById('overallStats').style.display = 'block';
+
+      // Pro-only advanced analytics
+      if (profile.isPro) {
+        document.getElementById('proUpgrade').style.display = 'none';
+        document.getElementById('proAnalytics').classList.add('active');
+
+        const riskReward = avgWin / avgLoss || 0;
+        let maxDrawdown = 0;
+        let peak = profile.startingBalance;
+        let balance = profile.startingBalance;
+        trades.sort((a, b) => a.date.localeCompare(b.date)).forEach(t => {
+          balance += t.pnl;
+          if (balance > peak) peak = balance;
+          const dd = (peak - balance) / peak * 100;
+          if (dd > maxDrawdown) maxDrawdown = dd;
+        });
+        const totalVolume = trades.reduce((sum, t) => sum + t.volume, 0);
+        const avgLeverage = trades.length ? trades.reduce((sum, t) => sum + t.leverage, 0) / trades.length : 0;
+        const pnlReturns = trades.map(t => t.pnl / t.size * 100); // % returns
+        const avgReturn = pnlReturns.reduce((sum, r) => sum + r, 0) / pnlReturns.length || 0;
+        const stdDev = Math.sqrt(pnlReturns.reduce((sum, r) => sum + (r - avgReturn)**2, 0) / pnlReturns.length) || 1;
+        const sharpe = avgReturn / stdDev; // Simplified Sharpe (no risk-free rate)
+
+        const pairPnL = trades.reduce((acc, t) => {
+          acc[t.pair] = (acc[t.pair] || 0) + t.pnl;
+          return acc;
+        }, {});
+        const bestPair = Object.entries(pairPnL).reduce((best, [pair, pnl]) => pnl > best.pnl ? {pair, pnl} : best, {pair: 'N/A', pnl: -Infinity}).pair;
+        const worstPair = Object.entries(pairPnL).reduce((worst, [pair, pnl]) => pnl < worst.pnl ? {pair, pnl} : worst, {pair: 'N/A', pnl: Infinity}).pair;
+
+        const longTrades = trades.filter(t => t.direction === 'Long');
+        const shortTrades = trades.filter(t => t.direction === 'Short');
+        const longWinRate = longTrades.length ? (longTrades.filter(t => t.pnl > 0).length / longTrades.length * 100) : 0;
+        const shortWinRate = shortTrades.length ? (shortTrades.filter(t => t.pnl > 0).length / shortTrades.length * 100) : 0;
+
+        document.getElementById('riskReward').textContent = riskReward.toFixed(2);
+        document.getElementById('maxDrawdown').textContent = maxDrawdown.toFixed(2);
+        document.getElementById('totalVolume').textContent = totalVolume.toFixed(2);
+        document.getElementById('avgLeverage').textContent = avgLeverage.toFixed(1) + 'x';
+        document.getElementById('sharpeRatio').textContent = sharpe.toFixed(2);
+        document.getElementById('bestPair').textContent = bestPair;
+        document.getElementById('worstPair').textContent = worstPair;
+        document.getElementById('longWinRate').textContent = longWinRate.toFixed(1) + '%';
+        document.getElementById('shortWinRate').textContent = shortWinRate.toFixed(1) + '%';
+      } else {
+        document.getElementById('proUpgrade').style.display = 'block';
+        document.getElementById('proAnalytics').classList.remove('active');
+      }
+    }
+
+    function getGrokAnalysis() {
+      const csvData = trades.map(t => `${t.date},${t.pair},${t.direction},${t.entry},${t.exit},${t.size},${t.leverage},${t.volume.toFixed(2)},${t.fees},${t.pnl.toFixed(2)}`).join('\n');
+      const prompt = `Analyze my trading history as a Tradoor user. Here's my CSV data (Date,Pair,Direction,Entry,Exit,Size,Leverage,Volume,Fees,PnL):\n${csvData}\n\nProfile: Name=${profile.name}, Starting Balance=$${profile.startingBalance}, Risk %=${profile.riskPercent}\nProvide personalized advice to improve my journey, identify patterns, risks, and strategies to become a better trader.`;
+      document.getElementById('grokPrompt').value = prompt;
+      document.getElementById('grokPrompt').style.display = 'block';
+      alert('Copy the prompt below and paste it to Grok for advanced AI analysis!');
+    }
+
+    async function upgradeToPro() {
+      // Simulate Stripe checkout (replace with real integration)
+      const session = { id: 'test_session_id' }; // In real: await fetch('/create-checkout-session', {method: 'POST'}).then(res => res.json());
+      stripe.redirectToCheckout({ sessionId: session.id });
+      // On success (webhook): set profile.isPro = true; saveProfile();
+      profile.isPro = true; // For demo
+      saveProfile();
+      calculateOverall();
+    }
+
+    function exportCSV(currentViewOnly = false) {
+      const data = currentViewOnly ? (document.getElementById('dateFilter').value ? trades.filter(t => t.date === document.getElementById('dateFilter').value) : trades) : trades;
+      if (data.length === 0) { alert("No trades"); return; }
+      let csv = "Date,Pair,Direction,Entry,Exit,Size,Leverage,Volume,Fees,PnL\n";
+      data.forEach(t => csv += `${t.date},${t.pair},${t.direction},${t.entry},${t.exit},${t.size},${t.leverage},${t.volume.toFixed(2)},${t.fees},${t.pnl.toFixed(2)}\n`);
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tradoor_${currentViewOnly ? 'view' : 'all'}_${DateTime.now().toFormat('yyyy-MM-dd')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function filterByDate() {
+      const date = document.getElementById('dateFilter').value;
+      if (date) {
+        renderTrades(date);
+        updateStats(date);
+      }
+    }
+
+    function showAll() {
+      document.getElementById('dateFilter').value = '';
+      renderTrades();
+      updateStats();
     }
 
     // Init
     document.getElementById('newDate').value = DateTime.now().toFormat('yyyy-MM-dd');
-    updateAllProfilePics();
+    updateProfileDisplay();
     renderTrades();
+    updateStats();
   </script>
 </body>
 </html>
